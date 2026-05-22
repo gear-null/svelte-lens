@@ -1,0 +1,106 @@
+<script lang="ts">
+  import type { ActionContext, ContextMenuAction, Position } from "../types.js";
+
+  interface Props {
+    position: Position | null;
+    actions: ContextMenuAction[];
+    actionContext: ActionContext | null;
+    onDismiss: () => void;
+  }
+
+  let { position, actions, actionContext, onDismiss }: Props = $props();
+
+  const isEnabled = (action: ContextMenuAction): boolean => {
+    if (!actionContext) return false;
+    if (action.enabled === undefined) return true;
+    if (typeof action.enabled === "boolean") return action.enabled;
+    return action.enabled(actionContext);
+  };
+
+  const runAction = async (action: ContextMenuAction): Promise<void> => {
+    if (!actionContext) return;
+    await action.onAction(actionContext);
+  };
+</script>
+
+{#if position && actionContext}
+  <div class="lens-menu" style="position:fixed;top:{position.y}px;left:{position.x}px" role="menu">
+    {#each actions as action (action.id)}
+      {@const enabled = isEnabled(action)}
+      <button
+        class="lens-menu-item"
+        disabled={!enabled}
+        onclick={() => runAction(action)}
+        role="menuitem"
+      >
+        <span>{action.label}</span>
+        {#if action.shortcut}
+          <kbd>{action.shortcut}</kbd>
+        {/if}
+      </button>
+    {/each}
+  </div>
+
+  <div
+    class="lens-menu-backdrop"
+    role="presentation"
+    onclick={onDismiss}
+    onkeydown={(e) => e.key === "Escape" && onDismiss()}
+  ></div>
+{/if}
+
+<style>
+  .lens-menu {
+    z-index: 2147483647;
+    pointer-events: auto;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 4px;
+    min-width: 160px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      sans-serif;
+    font-size: 12px;
+    color: white;
+  }
+  .lens-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+    pointer-events: auto;
+    background: transparent;
+  }
+  .lens-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: transparent;
+    border: 0;
+    color: white;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+  }
+  .lens-menu-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .lens-menu-item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  kbd {
+    font-family: inherit;
+    font-size: 10px;
+    color: #999;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+</style>

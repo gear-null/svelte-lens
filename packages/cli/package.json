@@ -1,0 +1,42 @@
+{
+  "name": "@svelte-lens/cli",
+  "version": "0.0.0",
+  "description": "CLI to add svelte-lens to your Svelte project.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "bin": {
+    "svelte-lens": "./bin/cli.js",
+    "sv-lens": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "package.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "commander": "^14.0.0",
+    "package-manager-detector": "^1.0.0",
+    "picocolors": "^1.1.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/prompts": "^2.4.9",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.7"
+  }
+}

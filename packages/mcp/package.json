@@ -1,0 +1,35 @@
+{
+  "name": "@svelte-lens/mcp",
+  "version": "0.0.0",
+  "description": "MCP server that exposes svelte-lens element context to coding agents.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "bin": {
+    "svelte-lens-mcp": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "package.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0"
+  }
+}
