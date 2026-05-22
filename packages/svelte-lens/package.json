@@ -14,7 +14,7 @@
   "author": "gear-null",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/svelte-lens/svelte-lens.git"
+    "url": "git+https://github.com/gear-null/svelte-lens.git"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -40,7 +40,8 @@
     "./styles.css": "./dist/styles.css"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "vite build",
