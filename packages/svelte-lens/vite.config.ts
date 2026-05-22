@@ -26,7 +26,7 @@ export default defineConfig({
     dts({
       tsconfigPath: "./tsconfig.build.json",
       include: ["src/**/*.ts"],
-      exclude: ["**/*.svelte", "**/*.test.ts"],
+      exclude: ["**/*.svelte", "**/*.test.ts", "**/__tests__/**"],
       rollupTypes: false,
       copyDtsFiles: false,
     }),

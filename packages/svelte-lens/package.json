@@ -19,7 +19,6 @@
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
-  "browser": "./dist/index.global.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
@@ -36,8 +35,7 @@
     "./core": {
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
-    },
-    "./styles.css": "./dist/styles.css"
+    }
   },
   "publishConfig": {
     "access": "public",
