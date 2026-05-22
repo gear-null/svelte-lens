@@ -35,8 +35,12 @@ jobs:
 
       - run: pnpm build
 
-      - name: Publish to npm
-        run: pnpm release
+      - name: Publish to npm and create GitHub release
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+          createGitHubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
