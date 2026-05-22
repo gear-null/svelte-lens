@@ -1,4 +1,4 @@
-# @svelte-lens/mcp
+# @gear-null/svelte-lens-mcp
 
 MCP server that exposes svelte-lens element context to AI coding agents.
 
@@ -13,7 +13,7 @@ Add to your `.mcp.json`:
   "mcpServers": {
     "svelte-lens": {
       "command": "npx",
-      "args": ["-y", "@svelte-lens/mcp"]
+      "args": ["-y", "@gear-null/svelte-lens-mcp"]
     }
   }
 }
@@ -22,7 +22,7 @@ Add to your `.mcp.json`:
 ### With Cursor / Windsurf
 
 ```bash
-npx @svelte-lens/mcp
+npx @gear-null/svelte-lens-mcp
 ```
 
 ## License

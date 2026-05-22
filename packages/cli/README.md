@@ -1,4 +1,4 @@
-# @svelte-lens/cli
+# @gear-null/svelte-lens-cli
 
 CLI to add [svelte-lens](https://npmjs.com/package/svelte-lens) to your Svelte project.
 

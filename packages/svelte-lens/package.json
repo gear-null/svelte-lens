@@ -1,6 +1,6 @@
 {
   "name": "svelte-lens",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Hover any UI element in your browser, copy its source context for AI agents. Built for Svelte.",
   "keywords": [
     "svelte",

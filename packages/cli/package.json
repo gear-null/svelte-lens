@@ -1,14 +1,11 @@
 {
-  "name": "@svelte-lens/cli",
-  "version": "0.0.0",
+  "name": "@gear-null/svelte-lens-cli",
+  "version": "1.0.1",
   "description": "CLI to add svelte-lens to your Svelte project.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cli.js",
-  "bin": {
-    "svelte-lens": "./bin/cli.js",
-    "sv-lens": "./bin/cli.js"
-  },
+  "bin": "./bin/cli.js",
   "files": [
     "bin",
     "dist",

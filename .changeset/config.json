@@ -5,7 +5,7 @@
     { "repo": "gear-null/svelte-lens" }
   ],
   "commit": false,
-  "fixed": [["svelte-lens", "sv-lens"]],
+  "fixed": [["svelte-lens", "sv-lens", "@gear-null/svelte-lens-cli", "@gear-null/svelte-lens-mcp"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

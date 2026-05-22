@@ -1,6 +1,6 @@
 {
   "name": "sv-lens",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Short alias for svelte-lens. Hover any Svelte UI element, copy source context for AI agents.",
   "keywords": [
     "svelte",
