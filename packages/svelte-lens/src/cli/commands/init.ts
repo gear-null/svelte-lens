@@ -78,7 +78,11 @@ export const init = new Command("init")
 
     if (!opts.skipInstall && !project.hasSvelteLens) {
       logger.info("Installing svelte-lens as dev dependency...");
-      await installPackages(["svelte-lens"], project.packageManager, project.projectRoot);
+      await installPackages(
+        ["@gear-null/svelte-lens"],
+        project.packageManager,
+        project.projectRoot,
+      );
     }
 
     if (!result.noChanges && result.newContent) {

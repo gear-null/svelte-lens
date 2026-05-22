@@ -31,7 +31,7 @@ const formatContext = (context: AgentContext): string => {
 
 const createMcpServer = (): McpServer => {
   const server = new McpServer(
-    { name: "svelte-lens-mcp", version: "0.0.0" },
+    { name: "svelte-lens-mcp", version: "1.0.0" },
     { capabilities: { logging: {} } },
   );
 

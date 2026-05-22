@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --filter=svelte-lens --filter=@svelte-lens/e2e-app",
+    "dev": "turbo run dev --filter=@gear-null/svelte-lens --filter=@svelte-lens/e2e-app",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,js,svelte,json,md}\"",

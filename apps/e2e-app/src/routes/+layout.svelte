@@ -6,7 +6,7 @@
 
   onMount(() => {
     if (dev) {
-      void import("svelte-lens");
+      void import("@gear-null/svelte-lens");
     }
   });
 </script>

@@ -5,9 +5,6 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".svelte-kit/**"]
     },
-    "sv-lens#build": {
-      "dependsOn": ["svelte-lens#build"]
-    },
     "dev": {
       "cache": false,
       "persistent": true
