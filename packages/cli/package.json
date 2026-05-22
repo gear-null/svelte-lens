@@ -38,5 +38,15 @@
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^4.1.7"
+  },
+  "author": "gear-null",
+  "homepage": "https://github.com/gear-null/svelte-lens#readme",
+  "bugs": {
+    "url": "https://github.com/gear-null/svelte-lens/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gear-null/svelte-lens.git",
+    "directory": "packages/cli"
   }
 }

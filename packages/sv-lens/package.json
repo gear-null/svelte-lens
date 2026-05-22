@@ -43,5 +43,15 @@
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
+  },
+  "author": "gear-null",
+  "homepage": "https://github.com/gear-null/svelte-lens#readme",
+  "bugs": {
+    "url": "https://github.com/gear-null/svelte-lens/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gear-null/svelte-lens.git",
+    "directory": "packages/sv-lens"
   }
 }

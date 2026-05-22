@@ -11,7 +11,7 @@
     "devtools"
   ],
   "license": "MIT",
-  "author": "",
+  "author": "gear-null",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/svelte-lens/svelte-lens.git"
@@ -67,5 +67,9 @@
     "vite": "^8.0.0",
     "vite-plugin-dts": "^5.0.0",
     "vitest": "^4.1.7"
+  },
+  "homepage": "https://github.com/gear-null/svelte-lens#readme",
+  "bugs": {
+    "url": "https://github.com/gear-null/svelte-lens/issues"
   }
 }
