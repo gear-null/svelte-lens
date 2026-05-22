@@ -1,0 +1,61 @@
+name: Post-Release Smoke Test
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version to test (e.g. 1.0.0)"
+        required: false
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  smoke-test:
+    name: Smoke Test Published Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install from npm
+        run: |
+          npm init -y
+          npm install @gear-null/svelte-lens
+
+      - name: Verify package exports
+        run: |
+          node --input-type=module -e "
+            import * as api from '@gear-null/svelte-lens';
+            const required = ['init','copyPlugin','openPlugin','getSource','getStack','getStackContext','getElementContext','isLensHost','getGlobalApi','registerPlugin','unregisterPlugin'];
+            for (const name of required) {
+              if (!(name in api)) { console.error('MISSING:', name); process.exit(1); }
+            }
+            console.log('All', required.length, 'exports verified');
+          "
+
+      - name: Verify CLI bin
+        run: |
+          npx svelte-lens --version
+          npx svelte-lens init --help
+
+      - name: Verify MCP bin
+        run: |
+          npx svelte-lens-mcp --port 25174 &
+          MCP_PID=$!
+          sleep 2
+          curl -sf http://127.0.0.1:25174/health | grep -q '"ok"'
+          kill $MCP_PID 2>/dev/null
+          echo "MCP health check passed"
+
+      - name: Scaffold SvelteKit and run init
+        run: |
+          cd /tmp
+          npx sv create --template minimal --types ts --no-add-ons sk-test
+          cd sk-test
+          npx svelte-lens init --yes --skip-install
+          grep -q "@gear-null/svelte-lens" src/routes/+layout.svelte
+          echo "CLI init verified in fresh SvelteKit project"
