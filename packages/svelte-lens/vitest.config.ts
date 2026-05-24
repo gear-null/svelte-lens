@@ -28,6 +28,9 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.ts"],
+    // package-e2e tests spawn processes and import the built dist; they must
+    // run under Node (via vitest.package.config.ts), not jsdom.
+    exclude: ["**/node_modules/**", "**/dist/**", "src/__tests__/package-e2e.test.ts"],
     setupFiles: ["src/__tests__/setup.ts"],
     globals: true,
     testTimeout: 10000,
