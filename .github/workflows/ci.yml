@@ -3,8 +3,24 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".prettierignore"
+      - ".prettierrc"
+      - ".editorconfig"
+      - ".github/**"
+      - "!.github/workflows/ci.yml"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".prettierignore"
+      - ".prettierrc"
+      - ".editorconfig"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -141,3 +157,5 @@ jobs:
           test -f packages/svelte-lens/dist/index.js || (echo "svelte-lens dist missing" && exit 1)
           test -f packages/svelte-lens/dist/cli/cli.js || (echo "cli dist missing" && exit 1)
           test -f packages/svelte-lens/dist/mcp/cli.js || (echo "mcp dist missing" && exit 1)
+          test -f packages/svelte-lens/bin/cli.js || (echo "cli bin missing" && exit 1)
+          test -f packages/svelte-lens/bin/mcp.js || (echo "mcp bin missing" && exit 1)

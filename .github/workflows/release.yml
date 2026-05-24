@@ -5,7 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+# Don't cancel in-progress releases — partial publishes are bad.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   id-token: write
@@ -16,12 +19,21 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     # Only publish when the Version PR was merged (commit message matches)
-    # or when manually triggered via workflow_dispatch
+    # or when manually triggered via workflow_dispatch.
+    # Repository is locked to squash-only merges, and squash commit title is
+    # set to the PR title, so this is deterministic.
     if: >
       startsWith(github.event.head_commit.message, 'chore: version packages')
       || github.event_name == 'workflow_dispatch'
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # changesets/action needs full git history to generate accurate
+          # changelogs and resolve commit references.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -44,3 +56,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
+
+      - name: Summarize release
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          echo "## Released packages" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.changesets.outputs.publishedPackages }}' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
