@@ -30,7 +30,7 @@ jobs:
     name: Version
     runs-on: ubuntu-latest
     # Don't run on the version-bump commit itself — release.yml handles that.
-    if: ${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}"
     steps:
       - uses: actions/checkout@v4
         with:
