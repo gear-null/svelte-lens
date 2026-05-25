@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Package version to test (e.g. 1.0.0)"
+        description: "Package version to test (e.g. 1.0.0). Defaults to latest."
         required: false
+        default: ""
 
 env:
   FORCE_COLOR: 1
@@ -21,10 +22,35 @@ jobs:
         with:
           node-version: 22
 
+      # When triggered by a release event, the tag name is e.g. "@gear-null/svelte-lens@1.2.3".
+      # Extract the version after the last "@". For workflow_dispatch, use the input.
+      - name: Resolve target version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          elif [ -n "${{ github.event.release.tag_name }}" ]; then
+            VERSION="${GITHUB_REF_NAME##*@}"
+          else
+            VERSION="latest"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Testing @gear-null/svelte-lens@$VERSION"
+
       - name: Install from npm
         run: |
           npm init -y
-          npm install @gear-null/svelte-lens
+          npm install @gear-null/svelte-lens@${{ steps.version.outputs.version }}
+
+      - name: Verify installed version matches
+        if: steps.version.outputs.version != 'latest'
+        run: |
+          INSTALLED=$(node -p "require('@gear-null/svelte-lens/package.json').version")
+          if [ "$INSTALLED" != "${{ steps.version.outputs.version }}" ]; then
+            echo "Version mismatch: expected ${{ steps.version.outputs.version }}, got $INSTALLED"
+            exit 1
+          fi
+          echo "Verified version: $INSTALLED"
 
       - name: Verify package exports
         run: |

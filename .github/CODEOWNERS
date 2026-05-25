@@ -1,0 +1,10 @@
+# Default owner for the entire repo.
+# All PRs require review from these owners (when code-owner reviews are required).
+* @DoisKoh
+
+# Workflow files: extra scrutiny since they touch publishing and secrets.
+/.github/ @DoisKoh
+
+# Release-critical files.
+/.changeset/ @DoisKoh
+/packages/svelte-lens/package.json @DoisKoh

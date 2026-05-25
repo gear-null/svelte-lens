@@ -7,7 +7,8 @@ interface MountRootResult {
 }
 
 const attachToBody = (host: HTMLElement): void => {
-  if (!document.body) return;
+  // Guard against the document being torn down (e.g. between tests, or SSR).
+  if (typeof document === "undefined" || !document.body) return;
   const candidates = document.querySelectorAll<HTMLElement>(`[${HOST_ATTRIBUTE}]`);
   for (const candidate of candidates) {
     if (candidate === host) continue;
@@ -17,6 +18,7 @@ const attachToBody = (host: HTMLElement): void => {
 };
 
 const scheduleAttach = (host: HTMLElement): void => {
+  if (typeof document === "undefined") return;
   if (document.body) {
     attachToBody(host);
     return;

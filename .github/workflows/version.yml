@@ -3,8 +3,19 @@ name: Version
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".github/**"
+      - "!.github/workflows/version.yml"
+      - ".gitignore"
+      - ".prettierignore"
+      - ".prettierrc"
+      - ".editorconfig"
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -14,8 +25,13 @@ jobs:
   version:
     name: Version
     runs-on: ubuntu-latest
+    # Don't run on the version-bump commit itself — release.yml handles that.
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # changesets/action needs full git history to generate changelogs.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 

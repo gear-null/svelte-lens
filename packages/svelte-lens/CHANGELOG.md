@@ -1,4 +1,4 @@
-# svelte-lens
+# @gear-null/svelte-lens
 
 ## 1.0.0
 

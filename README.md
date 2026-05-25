@@ -1,5 +1,10 @@
 # svelte-lens
 
+[![npm version](https://img.shields.io/npm/v/@gear-null/svelte-lens.svg)](https://www.npmjs.com/package/@gear-null/svelte-lens)
+[![CI](https://github.com/gear-null/svelte-lens/actions/workflows/ci.yml/badge.svg)](https://github.com/gear-null/svelte-lens/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Provenance](https://img.shields.io/badge/npm-provenance-blue)](https://docs.npmjs.com/generating-provenance-statements)
+
 **Hover any UI element, copy its source context for AI agents. Built for Svelte 5.**
 
 svelte-lens gives your AI coding agent eyes inside your running app. Activate it, hover any DOM element, and press Cmd+C to copy the element's HTML preview and component source stack straight to your clipboard. Your agent gets precise, grounded context about what's on screen instead of guessing from file listings.
