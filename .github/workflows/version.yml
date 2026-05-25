@@ -32,14 +32,14 @@ jobs:
     # Don't run on the version-bump commit itself — release.yml handles that.
     if: "${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # changesets/action needs full git history to generate changelogs.
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
