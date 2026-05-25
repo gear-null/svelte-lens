@@ -6,12 +6,16 @@ on:
     paths-ignore:
       - "**.md"
       - "LICENSE"
-      - ".github/**"
-      - "!.github/workflows/version.yml"
       - ".gitignore"
       - ".prettierignore"
       - ".prettierrc"
       - ".editorconfig"
+      - ".github/CODEOWNERS"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - ".github/dependabot.yml"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/smoke-test.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
