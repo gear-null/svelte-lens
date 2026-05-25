@@ -64,7 +64,7 @@
     "package-manager-detector": "^1.0.0",
     "picocolors": "^1.1.0",
     "prompts": "^2.4.2",
-    "zod": "^3.23.0"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
