@@ -6,12 +6,16 @@ on:
     paths-ignore:
       - "**.md"
       - "LICENSE"
-      - ".github/**"
-      - "!.github/workflows/version.yml"
       - ".gitignore"
       - ".prettierignore"
       - ".prettierrc"
       - ".editorconfig"
+      - ".github/CODEOWNERS"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - ".github/dependabot.yml"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/smoke-test.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +30,7 @@ jobs:
     name: Version
     runs-on: ubuntu-latest
     # Don't run on the version-bump commit itself — release.yml handles that.
-    if: ${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}"
     steps:
       - uses: actions/checkout@v4
         with:

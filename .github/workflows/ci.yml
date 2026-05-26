@@ -10,8 +10,12 @@ on:
       - ".prettierignore"
       - ".prettierrc"
       - ".editorconfig"
-      - ".github/**"
-      - "!.github/workflows/ci.yml"
+      - ".github/CODEOWNERS"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - ".github/dependabot.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/version.yml"
+      - ".github/workflows/smoke-test.yml"
   pull_request:
     branches: [main]
     paths-ignore:
@@ -21,6 +25,9 @@ on:
       - ".prettierignore"
       - ".prettierrc"
       - ".editorconfig"
+      - ".github/CODEOWNERS"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - ".github/dependabot.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
