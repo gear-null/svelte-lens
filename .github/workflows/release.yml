@@ -10,14 +10,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-permissions:
-  id-token: write
-  contents: write
+# Default to no permissions; grant explicitly per job.
+permissions: {}
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write    # for npm OIDC trusted publishing + provenance
+      contents: write    # for changesets to create GitHub releases
     # Only publish when the Version PR was merged (commit message matches)
     # or when manually triggered via workflow_dispatch.
     # Repository is locked to squash-only merges, and squash commit title is
@@ -59,8 +61,12 @@ jobs:
 
       - name: Summarize release
         if: steps.changesets.outputs.published == 'true'
+        env:
+          PUBLISHED: ${{ steps.changesets.outputs.publishedPackages }}
         run: |
-          echo "## Released packages" >> $GITHUB_STEP_SUMMARY
-          echo '```json' >> $GITHUB_STEP_SUMMARY
-          echo '${{ steps.changesets.outputs.publishedPackages }}' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Released packages"
+            echo '```json'
+            printf '%s\n' "$PUBLISHED"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

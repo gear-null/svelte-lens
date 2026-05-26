@@ -33,6 +33,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Default to no permissions; CI is read-only.
+permissions:
+  contents: read
+
 env:
   FORCE_COLOR: 1
 

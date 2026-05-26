@@ -6,9 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Package version to test (e.g. 1.0.0). Defaults to latest."
+        description: "Package version to test (semver, e.g. 1.0.0). Defaults to latest."
         required: false
         default: ""
+
+# Default to no permissions; grant explicitly per job.
+permissions: {}
 
 env:
   FORCE_COLOR: 1
@@ -17,37 +20,54 @@ jobs:
   smoke-test:
     name: Smoke Test Published Package
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
 
-      # When triggered by a release event, the tag name is e.g. "@gear-null/svelte-lens@1.2.3".
-      # Extract the version after the last "@". For workflow_dispatch, use the input.
+      # Pass tainted inputs through env vars (never inline ${{ }} into shell)
+      # and validate the format before using.
       - name: Resolve target version
         id: version
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
-          elif [ -n "${{ github.event.release.tag_name }}" ]; then
-            VERSION="${GITHUB_REF_NAME##*@}"
+          set -euo pipefail
+          if [ -n "$VERSION_INPUT" ]; then
+            VERSION="$VERSION_INPUT"
+          elif [ -n "$RELEASE_TAG" ]; then
+            VERSION="${RELEASE_TAG##*@}"
           else
             VERSION="latest"
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Allowlist: semver (1.2.3, 1.2.3-beta.1) or literal "latest".
+          if ! printf '%s' "$VERSION" | grep -Eq '^(latest|[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?)$'; then
+            echo "Rejected version (not semver/latest): $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Testing @gear-null/svelte-lens@$VERSION"
 
       - name: Install from npm
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
+          set -euo pipefail
           npm init -y
-          npm install @gear-null/svelte-lens@${{ steps.version.outputs.version }}
+          npm install "@gear-null/svelte-lens@$VERSION"
 
       - name: Verify installed version matches
         if: steps.version.outputs.version != 'latest'
+        env:
+          EXPECTED: ${{ steps.version.outputs.version }}
         run: |
+          set -euo pipefail
           INSTALLED=$(node -p "require('@gear-null/svelte-lens/package.json').version")
-          if [ "$INSTALLED" != "${{ steps.version.outputs.version }}" ]; then
-            echo "Version mismatch: expected ${{ steps.version.outputs.version }}, got $INSTALLED"
+          if [ "$INSTALLED" != "$EXPECTED" ]; then
+            echo "Version mismatch: expected $EXPECTED, got $INSTALLED"
             exit 1
           fi
           echo "Verified version: $INSTALLED"
@@ -70,6 +90,7 @@ jobs:
 
       - name: Verify MCP bin
         run: |
+          set -euo pipefail
           npx svelte-lens-mcp --port 25174 &
           MCP_PID=$!
           sleep 2
@@ -79,6 +100,7 @@ jobs:
 
       - name: Scaffold SvelteKit and run init
         run: |
+          set -euo pipefail
           cd /tmp
           npx sv create --template minimal --types ts --no-add-ons sk-test
           cd sk-test

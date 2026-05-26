@@ -21,14 +21,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  pull-requests: write
+# Default to no permissions; grant explicitly per job.
+permissions: {}
 
 jobs:
   version:
     name: Version
     runs-on: ubuntu-latest
+    permissions:
+      contents: write          # for the version-bump commit
+      pull-requests: write     # for the Version PR
     # Don't run on the version-bump commit itself — release.yml handles that.
     if: "${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}"
     steps:
