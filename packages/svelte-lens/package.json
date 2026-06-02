@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "commander": "^14.0.0",
+    "commander": "^15.0.0",
     "element-source": "^0.0.5",
     "package-manager-detector": "^1.0.0",
     "picocolors": "^1.1.0",
