@@ -21,55 +21,92 @@ describe("index.ts public API", () => {
     vi.restoreAllMocks();
   });
 
-  it("registerPlugin adds a plugin to the initialized API", async () => {
-    const { registerPlugin, getGlobalApi } = await import("../index.js");
+  it("registerPlugin queues a plugin before init, then flushes on init", async () => {
+    const { registerPlugin, getGlobalApi, init } = await import("../index.js");
 
-    // After import, auto-init has already run, so registerPlugin goes directly to the API
+    // Before init, registerPlugin queues the plugin.
     registerPlugin({
-      name: "direct-plugin",
+      name: "queued-plugin",
       theme: { hue: 90 },
     });
 
-    const api = getGlobalApi();
-    expect(api).not.toBeNull();
-    expect(api!.getPlugins()).toContain("direct-plugin");
+    // No global API yet — init() is required explicitly.
+    expect(getGlobalApi()).toBeNull();
 
-    if (api) cleanup = api.dispose;
+    const api = init();
+    expect(api.getPlugins()).toContain("queued-plugin");
+    cleanup = api.dispose;
+  });
+
+  it("registerPlugin adds directly after init", async () => {
+    const { registerPlugin, init } = await import("../index.js");
+
+    const api = init();
+    registerPlugin({ name: "direct-plugin", theme: { hue: 90 } });
+    expect(api.getPlugins()).toContain("direct-plugin");
+    cleanup = api.dispose;
   });
 
   it("unregisterPlugin removes a plugin from the initialized API", async () => {
-    const { registerPlugin, unregisterPlugin, getGlobalApi } = await import("../index.js");
+    const { registerPlugin, unregisterPlugin, init } = await import("../index.js");
 
+    const api = init();
     registerPlugin({ name: "removable-plugin" });
-    const api = getGlobalApi();
-    expect(api!.getPlugins()).toContain("removable-plugin");
+    expect(api.getPlugins()).toContain("removable-plugin");
 
     unregisterPlugin("removable-plugin");
-    expect(api!.getPlugins()).not.toContain("removable-plugin");
-
-    if (api) cleanup = api.dispose;
+    expect(api.getPlugins()).not.toContain("removable-plugin");
+    cleanup = api.dispose;
   });
 
-  it("auto-init sets window.__SVELTE_LENS__", async () => {
-    // The auto-init at the bottom of index.ts runs on import.
-    // Since vi.resetModules() was called, importing fresh will trigger auto-init.
-    await import("../index.js");
+  it("init() sets window.__SVELTE_LENS__ with Object.defineProperty", async () => {
+    const { init } = await import("../index.js");
 
+    const api = init();
     expect(window.__SVELTE_LENS__).toBeDefined();
-    if (window.__SVELTE_LENS__) {
-      cleanup = window.__SVELTE_LENS__.dispose;
-    }
+    expect(window.__SVELTE_LENS__).toBe(api);
+
+    // Verify the property is non-writable (finding #13).
+    const descriptor = Object.getOwnPropertyDescriptor(window, "__SVELTE_LENS__");
+    expect(descriptor?.writable).toBe(false);
+    expect(descriptor?.configurable).toBe(true);
+    cleanup = api.dispose;
   });
 
   it("getGlobalApi returns the initialized API", async () => {
     const { getGlobalApi, init } = await import("../index.js");
 
-    // init() calls setGlobalApi, so after init getGlobalApi should return the API
     const api = init();
     cleanup = api.dispose;
 
     const globalApi = getGlobalApi();
     expect(globalApi).not.toBeNull();
     expect(globalApi?.isEnabled()).toBe(true);
+  });
+
+  it("init() dispatches svelte-lens:init CustomEvent", async () => {
+    const { init } = await import("../index.js");
+
+    const handler = vi.fn();
+    window.addEventListener("svelte-lens:init", handler);
+
+    const api = init();
+    cleanup = api.dispose;
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0]?.[0]?.detail).toBe(api);
+    window.removeEventListener("svelte-lens:init", handler);
+  });
+
+  it("__SVELTE_LENS_DISABLED__ prevents initialization", async () => {
+    (window as unknown as Record<string, unknown>).__SVELTE_LENS_DISABLED__ = true;
+
+    const { init } = await import("../index.js");
+    const api = init();
+
+    expect(api.isEnabled()).toBe(false);
+    expect(window.__SVELTE_LENS__).toBeUndefined();
+
+    delete (window as unknown as Record<string, unknown>).__SVELTE_LENS_DISABLED__;
   });
 });

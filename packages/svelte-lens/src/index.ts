@@ -9,10 +9,23 @@ const flushPendingPlugins = (api: SvelteLensAPI): void => {
 };
 
 const init = (options?: import("./types.js").Options): SvelteLensAPI => {
+  if (typeof window !== "undefined" && window.__SVELTE_LENS_DISABLED__) {
+    options = { ...options, enabled: false };
+  }
   const api = coreInit(options);
   if (api.isEnabled()) {
     setGlobalApi(api);
     flushPendingPlugins(api);
+    // Dispatch event for plugin integrations — only on explicit init.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("svelte-lens:init", { detail: api }));
+    }
+    // Wrap dispose so the module-level globalApi is also cleared.
+    const origDispose = api.dispose.bind(api);
+    api.dispose = () => {
+      origDispose();
+      setGlobalApi(null);
+    };
   }
   return api;
 };
@@ -66,8 +79,16 @@ export const getGlobalApi = (): SvelteLensAPI | null => {
 const setGlobalApi = (api: SvelteLensAPI | null): void => {
   globalApi = api;
   if (typeof window !== "undefined") {
-    if (api) window.__SVELTE_LENS__ = api;
-    else delete window.__SVELTE_LENS__;
+    if (api) {
+      Object.defineProperty(window, "__SVELTE_LENS__", {
+        value: api,
+        configurable: true, // allows dispose() to delete
+        enumerable: false,
+        writable: false, // prevents overwrite by other scripts
+      });
+    } else {
+      delete window.__SVELTE_LENS__;
+    }
   }
 };
 
@@ -89,13 +110,3 @@ export const unregisterPlugin = (name: string): void => {
   const pendingIndex = pendingPlugins.findIndex((plugin) => plugin.name === name);
   if (pendingIndex !== -1) pendingPlugins.splice(pendingIndex, 1);
 };
-
-if (typeof window !== "undefined" && !window.__SVELTE_LENS_DISABLED__) {
-  if (window.__SVELTE_LENS__) {
-    globalApi = window.__SVELTE_LENS__;
-    flushPendingPlugins(globalApi);
-  } else {
-    globalApi = init();
-  }
-  window.dispatchEvent(new CustomEvent("svelte-lens:init", { detail: globalApi }));
-}
