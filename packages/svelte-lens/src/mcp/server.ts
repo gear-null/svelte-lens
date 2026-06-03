@@ -4,7 +4,13 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { CONTEXT_TTL_MS, DEFAULT_MCP_PORT, HEALTH_CHECK_TIMEOUT_MS } from "./constants.js";
+import {
+  CONTEXT_TTL_MS,
+  DEFAULT_MCP_PORT,
+  HEALTH_CHECK_TIMEOUT_MS,
+  MAX_BODY_SIZE_BYTES,
+  MAX_SESSIONS,
+} from "./constants.js";
 
 const agentContextSchema = z.object({
   content: z.array(z.string()).describe("Array of context strings (HTML + component stack)"),
@@ -61,7 +67,7 @@ const createMcpServer = (): McpServer => {
 
 const checkIfRunning = async (port: number): Promise<boolean> => {
   try {
-    const response = await fetch(`http://localhost:${port}/health`, {
+    const response = await fetch(`http://127.0.0.1:${port}/health`, {
       signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT_MS),
     });
     return response.ok;
@@ -77,10 +83,35 @@ interface McpSession {
 
 const sessions = new Map<string, McpSession>();
 
+const isLoopbackOrigin = (origin: string | undefined): boolean => {
+  if (!origin) return true; // non-browser clients have no Origin header
+  try {
+    const { hostname } = new URL(origin);
+    if (hostname === "localhost") return true;
+    // IPv4 loopback: full 127.0.0.0/8 range (RFC 1122).
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+    // IPv6 loopback: ::1 and IPv4-mapped IPv6 loopback (::ffff:127.x.x.x).
+    if (hostname === "::1") return true;
+    if (/^::ffff:127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+};
+
 const createHttpServer = (port: number): Server =>
   createServer(async (request, response) => {
-    const url = new URL(request.url ?? "/", `http://localhost:${port}`);
-    response.setHeader("Access-Control-Allow-Origin", "*");
+    const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
+
+    // Only allow loopback origins — reject cross-origin requests from other hosts.
+    const origin = request.headers.origin;
+    const allowedOrigin = isLoopbackOrigin(origin) ? (origin ?? "*") : undefined;
+    if (origin && !allowedOrigin) {
+      response.writeHead(403, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ error: "Cross-origin requests are not allowed" }));
+      return;
+    }
+    response.setHeader("Access-Control-Allow-Origin", allowedOrigin ?? "*");
     response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, OPTIONS");
     response.setHeader("Access-Control-Allow-Headers", "Content-Type, mcp-session-id");
     response.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
@@ -99,7 +130,18 @@ const createHttpServer = (port: number): Server =>
 
     if (url.pathname === "/context" && request.method === "POST") {
       const chunks: Buffer[] = [];
-      for await (const chunk of request) chunks.push(chunk as Buffer);
+      let bodySize = 0;
+      for await (const chunk of request) {
+        bodySize += (chunk as Buffer).length;
+        if (bodySize > MAX_BODY_SIZE_BYTES) {
+          request.resume(); // drain remaining body to free the socket
+          response
+            .writeHead(413, { "Content-Type": "application/json" })
+            .end(JSON.stringify({ error: "Request body exceeds 1 MiB limit" }));
+          return;
+        }
+        chunks.push(chunk as Buffer);
+      }
       try {
         const body = JSON.parse(Buffer.concat(chunks).toString());
         latestContext = { context: agentContextSchema.parse(body), submittedAt: Date.now() };
@@ -122,17 +164,45 @@ const createHttpServer = (port: number): Server =>
         return;
       }
       if (request.method === "POST") {
-        const mcpServer = createMcpServer();
-        const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-        });
-        transport.onclose = () => {
-          if (transport.sessionId) sessions.delete(transport.sessionId);
-        };
-        await mcpServer.server.connect(transport);
-        await transport.handleRequest(request, response);
-        if (transport.sessionId)
-          sessions.set(transport.sessionId, { server: mcpServer, transport });
+        if (sessions.size >= MAX_SESSIONS) {
+          response
+            .writeHead(503, { "Content-Type": "application/json" })
+            .end(JSON.stringify({ error: "Maximum concurrent sessions reached" }));
+          return;
+        }
+        // Reserve a slot synchronously to prevent TOCTOU race on the
+        // session cap. The placeholder is replaced or removed once the
+        // real session ID is known.
+        const reserveId = randomUUID();
+        sessions.set(reserveId, null as unknown as McpSession);
+        try {
+          const mcpServer = createMcpServer();
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+          });
+          // Determine the actual key that will be used for storage, so
+          // the onclose handler can delete the correct entry.
+          const storageKey = transport.sessionId ?? reserveId;
+          transport.onclose = () => {
+            sessions.delete(storageKey);
+          };
+          await mcpServer.server.connect(transport);
+          await transport.handleRequest(request, response);
+          // Replace the placeholder with the real session entry.
+          // Re-resolve storageKey in case sessionId was assigned during
+          // connect/handleRequest.
+          const actualKey = transport.sessionId ?? reserveId;
+          sessions.delete(reserveId);
+          sessions.set(actualKey, { server: mcpServer, transport });
+        } catch (err) {
+          // Clean up the reserved slot on error and respond to client.
+          sessions.delete(reserveId);
+          if (!response.headersSent) {
+            response
+              .writeHead(500, { "Content-Type": "application/json" })
+              .end(JSON.stringify({ error: "Internal MCP session error" }));
+          }
+        }
         return;
       }
       response
@@ -189,13 +259,18 @@ export const startMcpServer = async ({
     const mcpServer = createMcpServer();
     const transport = new StdioServerTransport();
     await mcpServer.server.connect(transport);
+    // In stdio mode, the MCP protocol runs over stdio for the agent,
+    // while the HTTP server remains available for browser integration
+    // (the browser extension submits context via the /context endpoint).
+    // The /mcp HTTP endpoint is also accessible — this is intentional so
+    // that HTTP-based MCP clients can still connect if needed.
     startHttpServer(port).then(
-      () => console.error(`svelte-lens context server listening on port ${port}`),
+      () => console.error(`svelte-lens context server listening on 127.0.0.1:${port}`),
       (error) => console.error(`Failed to start context server: ${error}`),
     );
     return;
   }
 
   await startHttpServer(port);
-  console.log(`svelte-lens MCP server listening on http://localhost:${port}/mcp`);
+  console.log(`svelte-lens MCP server listening on http://127.0.0.1:${port}/mcp`);
 };
