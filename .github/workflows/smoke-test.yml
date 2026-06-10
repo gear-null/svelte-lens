@@ -115,11 +115,16 @@ jobs:
           echo "MCP health check passed"
 
       - name: Scaffold SvelteKit and run init
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           cd /tmp
           npx sv create --template minimal --types ts --no-add-ons sk-test
           cd sk-test
-          npx svelte-lens init --yes --skip-install
+          # Bare "npx svelte-lens" resolves the deprecated unscoped npm
+          # package (no bin) in a project without the lens installed; pin
+          # the scoped package at the version under test instead.
+          npx --yes -p "@gear-null/svelte-lens@$VERSION" svelte-lens init --yes --skip-install
           grep -q "@gear-null/svelte-lens" src/routes/+layout.svelte
           echo "CLI init verified in fresh SvelteKit project"
