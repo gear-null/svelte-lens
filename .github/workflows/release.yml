@@ -39,6 +39,11 @@ jobs:
           cache: pnpm
           registry-url: "https://registry.npmjs.org"
 
+      # Tokenless OIDC trusted publishing requires npm CLI >= 11.5.1;
+      # Node 22 bundles npm 10.x. The npm-side Trusted Publisher must be
+      # configured for this repo+workflow at npmjs.com (package settings).
+      - run: npm install -g npm@^11.5.1
+
       - run: pnpm install --frozen-lockfile --ignore-scripts
 
       - run: pnpm build

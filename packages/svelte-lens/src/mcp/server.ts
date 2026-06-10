@@ -204,10 +204,16 @@ const createHttpServer = (port: number): Server =>
           await mcpServer.server.connect(transport);
           await transport.handleRequest(request, response);
           // Replace the placeholder with the real session entry, unless
-          // the transport already closed during handleRequest.
+          // the transport already closed during handleRequest. A transport
+          // without a sessionId (e.g. a malformed non-initialize POST that
+          // the SDK rejected with 400 but left open) must be closed, not
+          // stored — storing it under the placeholder key would leak the
+          // slot permanently since no client can ever address it.
           sessions.delete(reserveId);
-          if (!closed) {
-            sessions.set(transport.sessionId ?? reserveId, { server: mcpServer, transport });
+          if (!closed && transport.sessionId) {
+            sessions.set(transport.sessionId, { server: mcpServer, transport });
+          } else if (!closed) {
+            await transport.close();
           }
         } catch (err) {
           // Clean up the reserved slot on error and respond to client.
