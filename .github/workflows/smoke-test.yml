@@ -1,8 +1,12 @@
 name: Post-Release Smoke Test
 
 on:
-  release:
-    types: [published]
+  # Run after release.yml completes successfully — avoids a race where
+  # the package isn't on npm yet when this workflow starts.
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+    branches: ["@gear-null/svelte-lens@*"]
   workflow_dispatch:
     inputs:
       version:
@@ -20,6 +24,8 @@ jobs:
   smoke-test:
     name: Smoke Test Published Package
     runs-on: ubuntu-latest
+    # Only run when release.yml succeeded (not failed/cancelled).
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
     steps:
@@ -57,7 +63,14 @@ jobs:
         run: |
           set -euo pipefail
           npm init -y
-          npm install "@gear-null/svelte-lens@$VERSION"
+          # Retry up to 3 times — npm registry propagation can lag.
+          for i in 1 2 3; do
+            if npm install "@gear-null/svelte-lens@$VERSION" 2>/dev/null; then
+              break
+            fi
+            echo "Attempt $i failed — npm registry may not have the version yet. Retrying in 30s..."
+            sleep 30
+          done
 
       - name: Verify installed version matches
         if: steps.version.outputs.version != 'latest'
