@@ -81,7 +81,11 @@ jobs:
 
       - name: Publish to npm with provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Release events publish via OIDC trusted publishing; the
+          # long-lived NPM_TOKEN is only injected for emergency manual
+          # publishes (workflow_dispatch). The variable must still exist
+          # (empty) so setup-node's .npmrc env substitution succeeds.
+          NODE_AUTH_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.NPM_TOKEN || '' }}
         run: |
           set -euo pipefail
           cd packages/svelte-lens
