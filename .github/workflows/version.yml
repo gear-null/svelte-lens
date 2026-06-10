@@ -31,7 +31,8 @@ jobs:
     permissions:
       contents: write          # for the version-bump commit
       pull-requests: write     # for the Version PR
-    # Don't run on the version-bump commit itself — release.yml handles that.
+    # Don't run on the version-bump commit itself — publishing is a
+    # separate step triggered by creating a GitHub Release.
     if: "${{ !startsWith(github.event.head_commit.message, 'chore: version packages') }}"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6.0.2
