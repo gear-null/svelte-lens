@@ -16,18 +16,11 @@ on:
       - ".github/workflows/release.yml"
       - ".github/workflows/version.yml"
       - ".github/workflows/smoke-test.yml"
+  # No paths filter on pull_request: all six CI checks are required by
+  # branch protection, so skipping them (e.g. for docs-only or changeset
+  # PRs) leaves the PR permanently unmergeable.
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "LICENSE"
-      - ".gitignore"
-      - ".prettierignore"
-      - ".prettierrc"
-      - ".editorconfig"
-      - ".github/CODEOWNERS"
-      - ".github/PULL_REQUEST_TEMPLATE.md"
-      - ".github/dependabot.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
