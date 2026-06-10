@@ -11,6 +11,9 @@ on:
     # flow unrunnable.
     paths:
       - ".changeset/**"
+  # Manual re-run hook for when the push-triggered run fails (e.g.
+  # transient permission or registry errors).
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -48,7 +51,10 @@ jobs:
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # pin@v1.9.0
         with:
-          version: pnpm version
+          # "pnpm run version" — the bare "pnpm version" invokes pnpm's
+          # builtin version command, not the package.json script, so the
+          # changeset bump never ran.
+          version: pnpm run version
           title: "chore: version packages"
           commit: "chore: version packages"
         env:
