@@ -6,7 +6,7 @@
 
   onMount(() => {
     if (dev) {
-      void import("@gear-null/svelte-lens");
+      void import("@gear-null/svelte-lens").then((m) => m.init());
     }
   });
 </script>

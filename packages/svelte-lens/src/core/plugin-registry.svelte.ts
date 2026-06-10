@@ -89,6 +89,10 @@ export const createPluginRegistry = (initialOptions: SettableOptions = {}) => {
 
   const setOptions = (updates: SettableOptions): void => {
     for (const [optionKey, optionValue] of Object.entries(updates)) {
+      // Guard against prototype pollution (CWE-1321).
+      if (optionKey === "__proto__" || optionKey === "constructor" || optionKey === "prototype") {
+        continue;
+      }
       if (optionValue !== undefined) {
         (directOptionOverrides as Record<string, unknown>)[optionKey] = optionValue;
       }

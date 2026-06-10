@@ -2,6 +2,10 @@ import { PREVIEW_TEXT_MAX_LENGTH, INTERNAL_ATTRIBUTES } from "../constants.js";
 import { getTagName } from "./get-tag-name.js";
 import { truncateString } from "./truncate-string.js";
 
+/** Escape characters that are significant in HTML attribute/text contexts. */
+const escapeHtml = (str: string): string =>
+  str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 const PRIORITY_ATTRS: ReadonlyArray<string> = [
   "id",
   "data-testid",
@@ -20,11 +24,11 @@ const formatAttrs = (element: Element): string => {
     if (name === "class" || name === "style") continue;
     if (PRIORITY_ATTRS.includes(name) || value) {
       const valueText = truncateString(value, 60);
-      parts.push(value ? ` ${name}="${valueText}"` : ` ${name}`);
+      parts.push(value ? ` ${name}="${escapeHtml(valueText)}"` : ` ${name}`);
     }
   }
   const classValue = element.getAttribute("class");
-  if (classValue) parts.push(` class="${truncateString(classValue, 60)}"`);
+  if (classValue) parts.push(` class="${escapeHtml(truncateString(classValue, 60))}"`);
   return parts.join("");
 };
 
@@ -44,7 +48,7 @@ export const formatHtmlPreview = (element: Element): string => {
   const attrs = formatAttrs(element);
   const text = truncateString(getDirectText(element), PREVIEW_TEXT_MAX_LENGTH);
   if (text) {
-    return `<${tagName}${attrs}>${text}</${tagName}>`;
+    return `<${tagName}${attrs}>${escapeHtml(text)}</${tagName}>`;
   }
   const childCount = element.children.length;
   if (childCount > 0) {
