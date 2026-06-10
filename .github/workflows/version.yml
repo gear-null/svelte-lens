@@ -3,19 +3,14 @@ name: Version
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "LICENSE"
-      - ".gitignore"
-      - ".prettierignore"
-      - ".prettierrc"
-      - ".editorconfig"
-      - ".github/CODEOWNERS"
-      - ".github/PULL_REQUEST_TEMPLATE.md"
-      - ".github/dependabot.yml"
-      - ".github/workflows/ci.yml"
-      - ".github/workflows/release.yml"
-      - ".github/workflows/smoke-test.yml"
+    # This workflow exists solely to process changesets, so trigger only
+    # on .changeset/** changes (additions open/update the Version PR;
+    # the consuming "chore: version packages" commit is filtered by the
+    # job-level if). The previous paths-ignore list excluded "**.md",
+    # which also matched .changeset/*.md and made the documented release
+    # flow unrunnable.
+    paths:
+      - ".changeset/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
