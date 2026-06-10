@@ -8,8 +8,30 @@ const flushPendingPlugins = (api: SvelteLensAPI): void => {
   }
 };
 
+// `process.env.NODE_ENV` is left as a literal in the published build so the
+// consumer's bundler (Vite/Rollup/webpack) statically replaces it; without a
+// bundler the reference throws and we treat the build as non-production.
+const isProductionBuild = (): boolean => {
+  try {
+    return process.env.NODE_ENV === "production";
+  } catch {
+    return false;
+  }
+};
+
 const init = (options?: import("./types.js").Options): SvelteLensAPI => {
   if (typeof window !== "undefined" && window.__SVELTE_LENS_DISABLED__) {
+    options = { ...options, enabled: false };
+  } else if (
+    typeof window !== "undefined" &&
+    isProductionBuild() &&
+    window.__SVELTE_LENS_FORCE_ENABLE__ !== true
+  ) {
+    console.warn(
+      "[svelte-lens] init() skipped: production build detected. " +
+        "svelte-lens is a development tool and should not run for end users. " +
+        "Set window.__SVELTE_LENS_FORCE_ENABLE__ = true before calling init() to override.",
+    );
     options = { ...options, enabled: false };
   }
   const api = coreInit(options);
@@ -65,6 +87,7 @@ declare global {
   interface Window {
     __SVELTE_LENS__?: SvelteLensAPI;
     __SVELTE_LENS_DISABLED__?: boolean;
+    __SVELTE_LENS_FORCE_ENABLE__?: boolean;
   }
 }
 

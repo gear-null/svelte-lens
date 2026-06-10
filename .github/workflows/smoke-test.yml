@@ -39,13 +39,16 @@ jobs:
         id: version
         env:
           VERSION_INPUT: ${{ inputs.version }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          # For release-triggered runs of release.yml, workflow_run.head_branch
+          # carries the release tag (@gear-null/svelte-lens@X.Y.Z). The
+          # `release` event context does not exist in workflow_run payloads.
+          WORKFLOW_RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           set -euo pipefail
           if [ -n "$VERSION_INPUT" ]; then
             VERSION="$VERSION_INPUT"
-          elif [ -n "$RELEASE_TAG" ]; then
-            VERSION="${RELEASE_TAG##*@}"
+          elif [ -n "$WORKFLOW_RUN_BRANCH" ]; then
+            VERSION="${WORKFLOW_RUN_BRANCH##*@}"
           else
             VERSION="latest"
           fi

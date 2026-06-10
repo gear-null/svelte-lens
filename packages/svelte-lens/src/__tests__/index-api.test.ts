@@ -109,4 +109,36 @@ describe("index.ts public API", () => {
 
     delete (window as unknown as Record<string, unknown>).__SVELTE_LENS_DISABLED__;
   });
+
+  it("init() is a no-op in production builds", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    try {
+      const { init } = await import("../index.js");
+      const api = init();
+
+      expect(api.isEnabled()).toBe(false);
+      expect(window.__SVELTE_LENS__).toBeUndefined();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("__SVELTE_LENS_FORCE_ENABLE__ overrides the production guard", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    window.__SVELTE_LENS_FORCE_ENABLE__ = true;
+
+    try {
+      const { init } = await import("../index.js");
+      const api = init();
+
+      expect(api.isEnabled()).toBe(true);
+      cleanup = api.dispose;
+    } finally {
+      delete window.__SVELTE_LENS_FORCE_ENABLE__;
+      vi.unstubAllEnvs();
+    }
+  });
 });
