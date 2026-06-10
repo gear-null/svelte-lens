@@ -29,10 +29,12 @@ const parsePartsToKey = (parts: string[]): ParsedKey => {
 };
 
 const matchesParsedKey = (event: KeyboardEvent, parsed: ParsedKey): boolean => {
+  // Enforce exact modifier match for all modifiers, not just presence.
+  // Without this, "Alt+G" would also match "Ctrl+Alt+G".
   if (parsed.shift !== event.shiftKey) return false;
   if (parsed.alt !== event.altKey) return false;
-  if (parsed.ctrl && !event.ctrlKey) return false;
-  if (parsed.meta && !event.metaKey) return false;
+  if (parsed.ctrl !== event.ctrlKey) return false;
+  if (parsed.meta !== event.metaKey) return false;
   if (!parsed.key) return true;
   return event.key.toLowerCase() === parsed.key || event.code.toLowerCase() === parsed.key;
 };
@@ -45,6 +47,9 @@ export const parseActivationKey = (
   }
   if (typeof activation === "function") {
     return activation;
+  }
+  if (activation.trim() === "") {
+    return () => false;
   }
   const parsed = parsePartsToKey(activation.split(/[+\s]+/));
   return (event: KeyboardEvent) => matchesParsedKey(event, parsed);

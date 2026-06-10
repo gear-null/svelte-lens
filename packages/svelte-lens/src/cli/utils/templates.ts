@@ -4,9 +4,9 @@ export const SVELTEKIT_LAYOUT_BLOCK = `
     import { onMount } from "svelte";
 
     onMount(() => {
-      if (dev) import("svelte-lens").then((m) => m.init());
+      if (dev) import("@gear-null/svelte-lens").then((m) => m.init());
     });
   </script>
 `.trim();
 
-export const VITE_SVELTE_IMPORT = `if (import.meta.env.DEV) {\n  import("svelte-lens").then((m) => m.init());\n}`;
+export const VITE_SVELTE_IMPORT = `if (import.meta.env.DEV) {\n  import("@gear-null/svelte-lens").then((m) => m.init());\n}`;

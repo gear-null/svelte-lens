@@ -1,9 +1,13 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version to publish (semver, e.g. 1.0.1). Must match package.json."
+        required: true
 
 # Don't cancel in-progress releases — partial publishes are bad.
 concurrency:
@@ -15,26 +19,16 @@ permissions: {}
 
 jobs:
   release:
-    name: Release
+    name: Publish to npm
     runs-on: ubuntu-latest
     permissions:
-      id-token: write    # for npm OIDC trusted publishing + provenance
-      contents: write    # for changesets to create GitHub releases
-    # Only publish when the Version PR was merged (commit message matches)
-    # or when manually triggered via workflow_dispatch.
-    # Repository is locked to squash-only merges, and squash commit title is
-    # set to the PR title, so this is deterministic.
-    if: >
-      startsWith(github.event.head_commit.message, 'chore: version packages')
-      || github.event_name == 'workflow_dispatch'
+      id-token: write # for npm OIDC trusted publishing + provenance
+      contents: read # checkout only — GitHub Release already exists
     outputs:
-      published: ${{ steps.changesets.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+      published_version: ${{ steps.resolve.outputs.version }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6.0.2
         with:
-          # changesets/action needs full git history to generate accurate
-          # changelogs and resolve commit references.
           fetch-depth: 0
 
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # pin@v6.0.8
@@ -49,24 +43,56 @@ jobs:
 
       - run: pnpm build
 
-      - name: Publish to npm and create GitHub release
-        id: changesets
-        uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # pin@v1.8.0
-        with:
-          publish: pnpm release
-          createGitHubReleases: true
+      - name: Resolve target version
+        id: resolve
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASE_TAG" ]; then
+            # Tag format: @gear-null/svelte-lens@1.2.3 → extract "1.2.3"
+            VERSION="${RELEASE_TAG##*@}"
+          elif [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            echo "No version source (not a release event and no version input)"
+            exit 1
+          fi
+          # Validate semver format.
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "Rejected version (not semver): $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Verify package.json matches release version
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          PACKAGE_VERSION=$(node -p "require('./packages/svelte-lens/package.json').version")
+          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+            echo "Version mismatch: package.json has $PACKAGE_VERSION, expected $VERSION"
+            echo "Merge the Version PR first, then create the GitHub Release."
+            exit 1
+          fi
+          echo "Version verified: $VERSION"
+
+      - name: Publish to npm with provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd packages/svelte-lens
+          npm publish --provenance --no-git-checks
+          echo "Published @gear-null/svelte-lens@$(node -p "require('./package.json').version")"
 
       - name: Summarize release
-        if: steps.changesets.outputs.published == 'true'
         env:
-          PUBLISHED: ${{ steps.changesets.outputs.publishedPackages }}
+          VERSION: ${{ steps.resolve.outputs.version }}
         run: |
           {
-            echo "## Released packages"
-            echo '```json'
-            printf '%s\n' "$PUBLISHED"
-            echo '```'
+            echo "## Published @gear-null/svelte-lens@$VERSION"
+            echo "Provenance: enabled (OIDC trusted publishing)"
           } >> "$GITHUB_STEP_SUMMARY"
