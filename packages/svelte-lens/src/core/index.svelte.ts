@@ -26,6 +26,7 @@ import { isKeyboardEventFromInput } from "../utils/is-keyboard-event-from-input.
 import { copyToClipboard } from "../utils/copy-to-clipboard.js";
 import { getTagName } from "../utils/get-tag-name.js";
 import { formatHtmlPreview } from "../utils/format-html-preview.js";
+import { parseActivationKey } from "../utils/parse-activation-key.js";
 import { createLensStore } from "./store.svelte.js";
 import { createPluginRegistry } from "./plugin-registry.svelte.js";
 import { resolveSource, getStackContext } from "./source.js";
@@ -92,6 +93,15 @@ export const init = (rawOptions?: Options): SvelteLensAPI => {
     keyHoldDuration: rawOptions?.keyHoldDuration ?? 100,
   });
   const pluginRegistry = createPluginRegistry(initialOptions);
+
+  // Parse the activationKey option into a key-matcher function.
+  // Falls back to Cmd/Ctrl+Alt+G when no activationKey is configured.
+  const matchesActivationKey = parseActivationKey(initialOptions.activationKey);
+  const hasCustomActivationKey =
+    initialOptions.activationKey !== undefined &&
+    (typeof initialOptions.activationKey === "function" ||
+      (typeof initialOptions.activationKey === "string" &&
+        initialOptions.activationKey.trim() !== ""));
 
   const { root, shadowRoot, host } = mountRoot();
 
@@ -235,7 +245,12 @@ export const init = (rawOptions?: Options): SvelteLensAPI => {
       return;
     }
 
-    if (event.key === "g" && (event.metaKey || event.ctrlKey) && event.altKey) {
+    // Use the parsed activationKey matcher if a custom key was configured,
+    // otherwise fall back to the default Cmd/Ctrl+Alt+G shortcut.
+    const isActivationKey = hasCustomActivationKey
+      ? matchesActivationKey(event)
+      : event.key === "g" && (event.metaKey || event.ctrlKey) && event.altKey;
+    if (isActivationKey) {
       event.preventDefault();
       toggle();
     }
