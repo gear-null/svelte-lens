@@ -36,11 +36,11 @@ const findFirst = (projectRoot: string, candidates: string[]): string | null => 
 };
 
 const fileContainsLensImport = (content: string): boolean =>
-  /["'`](?:svelte-lens|sv-lens)["'`]/.test(content);
+  /["'`](?:@gear-null\/svelte-lens|svelte-lens)["'`]/.test(content);
 
 const LENS_ONMOUNT_CODE = `
   onMount(() => {
-    if (dev) import("svelte-lens");
+    if (dev) import("@gear-null/svelte-lens").then((m) => m.init());
   });`;
 
 const LENS_SCRIPT_IMPORTS = {
@@ -156,7 +156,7 @@ const transformViteSvelte = (projectRoot: string, force: boolean): TransformResu
       success: false,
       filePath: "",
       message:
-        "Could not find a Vite entry file. Add `if (import.meta.env.DEV) import('svelte-lens');` to your entry yourself.",
+        "Could not find a Vite entry file. Add `if (import.meta.env.DEV) import('@gear-null/svelte-lens').then(m => m.init());` to your entry yourself.",
     };
   }
 

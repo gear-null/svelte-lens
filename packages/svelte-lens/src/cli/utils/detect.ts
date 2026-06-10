@@ -67,7 +67,7 @@ const detectMonorepo = (projectRoot: string): boolean => {
 };
 
 const hasSvelteLensInDeps = (deps: Record<string, string> | null): boolean =>
-  Boolean(deps?.["svelte-lens"] ?? deps?.["sv-lens"]);
+  Boolean(deps?.["@gear-null/svelte-lens"] ?? deps?.["svelte-lens"]);
 
 export const detectProject = async (cwd: string): Promise<ProjectInfo> => {
   const packageManager = await detectPackageManager(cwd);
